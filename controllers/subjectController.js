@@ -5,13 +5,13 @@ const Category = require("../models/category");
 const Subject = require("../models/subject");
 
 // create new subject
-router.post("/new-subject/:username/:categoryName", async (req, res) => {
+router.post("/new-subject/:username/:columnIdx", async (req, res) => {
   const user = await User.findOne({ username: req.params.username });
   console.log("user", user);
 
   const category = await Category.findOne({
     user: user._id,
-    categoryName: req.params.categoryName,
+    columnIdx: req.params.columnIdx,
   });
   console.log("category", category);
 
@@ -45,6 +45,36 @@ router.get("/subjects/:username/:categoryName", async (req, res) => {
     res.json({ message: "User or Category not found" });
   }
 });
+
+// new detail
+router.post(
+  "/new-detail/:username/:categoryName/:subjectName",
+  async (req, res) => {
+    const user = await User.findOne({ username: req.params.username });
+
+    const category = await Category.findOne({
+      user: user._id,
+      categoryName: req.params.categoryName,
+    }).populate("subjects");
+
+    const subject = await Subject.findOne({
+      category: category._id,
+      subjectName: req.params.subjectName,
+    });
+
+    if (user && category && subject) {
+      subject.details.push({
+        description: req.body.description,
+        isChecked: req.body.isChecked,
+      });
+
+      await subject.save();
+      res.json({ subject });
+    } else {
+      res.json({ message: "User, Category, or Subject not found" });
+    }
+  }
+);
 
 // update subject
 router.post(
