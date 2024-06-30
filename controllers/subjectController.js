@@ -4,16 +4,16 @@ const User = require("../models/user");
 const Category = require("../models/category");
 const Subject = require("../models/subject");
 
-// create new subject
+// create new subject - DONE
 router.post("/new-subject/:username/:columnIdx", async (req, res) => {
   const user = await User.findOne({ username: req.params.username });
-  console.log("user", user);
+  // console.log("user", user);
 
   const category = await Category.findOne({
     user: user._id,
     columnIdx: req.params.columnIdx,
   });
-  console.log("category", category);
+  // console.log("category", category);
 
   if (user && category) {
     const newSubject = await Subject.create({
@@ -30,188 +30,156 @@ router.post("/new-subject/:username/:columnIdx", async (req, res) => {
   }
 });
 
-// read all subjects
-router.get("/subjects/:username/:categoryName", async (req, res) => {
+// create new detail - DONE
+router.post("/new-detail/:username", async (req, res) => {
   const user = await User.findOne({ username: req.params.username });
 
+  // console.log("req.body", req.body);
+
+  const subject = await Subject.findOne({
+    _id: req.body.subjectId,
+  });
+
+  console.log("user", user);
+  console.log("subject", subject);
+
+  if (user && subject) {
+    subject.details.push({
+      description: req.body.description,
+    });
+
+    await subject.save();
+    res.json({ subject });
+  } else {
+    res.json({ message: "User or Subject not found" });
+  }
+});
+
+// // read all subjects
+// router.get("/subjects/:username/:categoryName", async (req, res) => {
+//   const user = await User.findOne({ username: req.params.username });
+
+//   const category = await Category.findOne({
+//     user: user._id,
+//     categoryName: req.params.categoryName,
+//   }).populate("subjects");
+
+//   if (user && category) {
+//     res.json({ subjects: category.subjects });
+//   } else {
+//     res.json({ message: "User or Category not found" });
+//   }
+// });
+
+// update subject - DONE
+router.put("/update-subject/:username", async (req, res) => {
+  const user = await User.findOne({ username: req.params.username });
+
+  const subject = await Subject.findOne({
+    _id: req.body.subjectId,
+  });
+
+  if (user && subject) {
+    subject.subjectName = req.body.subjectName;
+    subject.description = req.body.description;
+
+    await subject.save();
+    res.json({ subject });
+  } else {
+    res.json({ message: "User or Subject not found" });
+  }
+});
+
+// update subject order
+router.put("/update-subject-order/:username/:columnIdx", async (req, res) => {
+  const user = await User.findOne({ username: req.params.username });
   const category = await Category.findOne({
     user: user._id,
     categoryName: req.params.categoryName,
-  }).populate("subjects");
+  });
 
   if (user && category) {
-    res.json({ subjects: category.subjects });
+    category.subjects = req.body.subjects;
+    await category.save();
+    res.json({ category });
   } else {
     res.json({ message: "User or Category not found" });
   }
 });
 
-// new detail
-router.post(
-  "/new-detail/:username/:categoryName/:subjectName",
-  async (req, res) => {
-    const user = await User.findOne({ username: req.params.username });
+// update detail - DONE
+router.put("/update-detail/:username", async (req, res) => {
+  const user = await User.findOne({ username: req.params.username });
 
-    const category = await Category.findOne({
-      user: user._id,
-      categoryName: req.params.categoryName,
-    }).populate("subjects");
+  // const category = await Category.findOne({
+  //   user: user._id,
+  //   categoryName: req.params.categoryName,
+  // }).populate("subjects");
 
-    const subject = await Subject.findOne({
-      category: category._id,
-      subjectName: req.params.subjectName,
-    });
+  const subject = await Subject.findOne({
+    _id: req.body.subjectId,
+  });
 
-    if (user && category && subject) {
-      subject.details.push({
-        description: req.body.description,
-        isChecked: req.body.isChecked,
-      });
+  if (user && subject) {
+    const detail = subject.details.id(req.body.detailId);
+    detail.description = req.body.description;
+    detail.isChecked = req.body.isChecked;
 
-      await subject.save();
-      res.json({ subject });
-    } else {
-      res.json({ message: "User, Category, or Subject not found" });
-    }
+    await subject.save();
+    res.json({ subject });
+  } else {
+    res.json({ message: "User or Subject not found" });
   }
-);
+});
 
-// update subject
-router.post(
-  "/new-detail/:username/:categoryName/:subjectName",
-  async (req, res) => {
-    const user = await User.findOne({ username: req.params.username });
+// delete subject - DONE
+router.delete("/delete-subject/:username/:columnIdx", async (req, res) => {
+  const user = await User.findOne({ username: req.params.username });
 
-    const category = await Category.findOne({
-      user: user._id,
-      categoryName: req.params.categoryName,
-    }).populate("subjects");
+  const category = await Category.findOne({
+    user: user._id,
+    columnIdx: req.params.columnIdx,
+  });
 
-    const subject = await Subject.findOne({
-      category: category._id,
-      subjectName: req.params.subjectName,
+  const subject = await Subject.findOne({
+    _id: req.body.subjectId,
+  });
+
+  if (user && category && subject) {
+    await Subject.deleteOne({ _id: subject._id });
+    category.subjects = category.subjects.filter((subject) => {
+      console.log("subject", subject);
+      console.log("req.body.subjectId", req.body.subjectId);
+      return subject != req.body.subjectId;
     });
 
-    if (user && category && subject) {
-      subject.details.push({
-        description: req.body.description,
-        isChecked: req.body.isChecked,
-      });
+    console.log("category", category);
 
-      await subject.save();
-      res.json({ subject });
-    } else {
-      res.json({ message: "User, Category, or Subject not found" });
-    }
+    await category.save();
+    res.json({ category });
+  } else {
+    res.json({ message: "User, Category, or Subject not found" });
   }
-);
+});
 
-// update subject order
-router.put(
-  "/update-subject-order/:username/:categoryName",
-  async (req, res) => {
-    const user = await User.findOne({ username: req.params.username });
-    const category = await Category.findOne({
-      user: user._id,
-      categoryName: req.params.categoryName,
-    });
+// delete detail - DONE
+router.delete("/delete-detail/:username", async (req, res) => {
+  const user = await User.findOne({ username: req.params.username });
 
-    if (user && category) {
-      category.subjects = req.body.subjects;
-      await category.save();
-      res.json({ category });
-    } else {
-      res.json({ message: "User or Category not found" });
-    }
+  const subject = await Subject.findOne({
+    _id: req.body.subjectId,
+  });
+
+  if (user && subject) {
+    subject.details = subject.details.filter(
+      (detail) => detail._id != req.body.detailId
+    );
+
+    await subject.save();
+    res.json({ subject });
+  } else {
+    res.json({ message: "User or Subject not found" });
   }
-);
-
-// update detail
-router.put(
-  "/update-detail/:username/:categoryName/:subjectName",
-  async (req, res) => {
-    const user = await User.findOne({ username: req.params.username });
-
-    const category = await Category.findOne({
-      user: user._id,
-      categoryName: req.params.categoryName,
-    }).populate("subjects");
-
-    const subject = await Subject.findOne({
-      category: category._id,
-      subjectName: req.params.subjectName,
-    });
-
-    if (user && category && subject) {
-      const detail = subject.details.id(req.body._id);
-      detail.description = req.body.description;
-      detail.isChecked = req.body.isChecked;
-
-      await subject.save();
-      res.json({ subject });
-    } else {
-      res.json({ message: "User, Category, or Subject not found" });
-    }
-  }
-);
-
-// delete subject
-router.delete(
-  "/delete-subject/:username/:categoryName/:subjectName",
-  async (req, res) => {
-    const user = await User.findOne({ username: req.params.username });
-
-    const category = await Category.findOne({
-      user: user._id,
-      categoryName: req.params.categoryName,
-    });
-
-    const subject = await Subject.findOne({
-      category: category._id,
-      subjectName: req.params.subjectName,
-    });
-
-    if (user && category && subject) {
-      await Subject.deleteOne({ _id: subject._id });
-      category.subjects = category.subjects.filter(
-        (subject) => subject.subjectName !== req.params.subjectName
-      );
-
-      await category.save();
-      res.json({ category });
-    } else {
-      res.json({ message: "User, Category, or Subject not found" });
-    }
-  }
-);
-
-// delete detail
-router.delete(
-  "/delete-detail/:username/:categoryName/:subjectName/:detailId",
-  async (req, res) => {
-    const user = await User.findOne({ username: req.params.username });
-
-    const category = await Category.findOne({
-      user: user._id,
-      categoryName: req.params.categoryName,
-    });
-
-    const subject = await Subject.findOne({
-      category: category._id,
-      subjectName: req.params.subjectName,
-    });
-
-    if (user && category && subject) {
-      subject.details = subject.details.filter(
-        (detail) => detail._id != req.params.detailId
-      );
-
-      await subject.save();
-      res.json({ subject });
-    } else {
-      res.json({ message: "User, Category, or Subject not found" });
-    }
-  }
-);
+});
 
 module.exports = router;

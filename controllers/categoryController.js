@@ -4,7 +4,7 @@ const User = require("../models/user");
 const Category = require("../models/category");
 const Subject = require("../models/subject");
 
-// create new category
+// create new category - DONE
 router.post("/new-category/:username", async (req, res) => {
   const user = await User.findOne({ username: req.params.username });
 
@@ -23,7 +23,7 @@ router.post("/new-category/:username", async (req, res) => {
   }
 });
 
-// read all categories
+// read all categories - DONE
 router.get("/categories/:username", async (req, res) => {
   const user = await User.findOne({ username: req.params.username }).populate(
     "categories"
@@ -45,7 +45,7 @@ router.get("/categories/:username", async (req, res) => {
   }
 });
 
-// update category
+// update category - DONE
 router.put("/update-category/:username/:columnIdx", async (req, res) => {
   const user = await User.findOne({ username: req.params.username });
   const category = await Category.findOne({
@@ -69,6 +69,8 @@ router.put("/update-category-order/:username", async (req, res) => {
 
   if (user) {
     user.categories = req.body.categories;
+    // console.log("user.categories", user.categories);
+    console.log("req.body.categories", req.body.categories);
     await user.save();
     res.json({ user });
   } else {
@@ -76,7 +78,7 @@ router.put("/update-category-order/:username", async (req, res) => {
   }
 });
 
-// delete category
+// delete category - DONE
 router.delete("/delete-category/:username/:categoryName", async (req, res) => {
   const user = await User.findOne({ username: req.params.username });
   const category = await Category.findOne({
